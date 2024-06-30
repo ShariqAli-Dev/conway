@@ -1,165 +1,165 @@
 #include "raylib.h"
 
-static const unsigned int screenWidth = 800;
-static const unsigned int screenHeight = 600;
-static const unsigned int cellSize = 50;
-static const unsigned int gridWidth = screenWidth / cellSize;
-static const unsigned int gridHeight = screenHeight / cellSize;
-static bool gridState[gridWidth][gridHeight] = {false};
+static const unsigned int screen_width = 800;
+static const unsigned int screen_height = 600;
+static const unsigned int cell_size = 25;
+static const unsigned int grid_width = screen_width / cell_size;
+static const unsigned int grid_height = screen_height / cell_size;
+static bool grid_state[grid_width][grid_height] = {false};
 static bool pause = false;
 
-static void UpdateDraw(void);
-static void DrawGame(void);
-static void DrawGrid(void);
-static void UpdateGame(void);
+static void update_draw(void);
+static void update_game(void);
+static void draw_game(void);
+static void draw_grid(void);
 
 int main()
 {
-    InitWindow(screenWidth, screenHeight, "Conway's Game of Life");
-    SetTargetFPS(10);
+    InitWindow(screen_width, screen_height, "Conway's Game of Life");
+    SetTargetFPS(5);
 
     while (!WindowShouldClose())
     {
-        UpdateDraw();
+        update_draw();
     }
 
     CloseWindow();
     return 0;
 }
 
-void CellGetAliveAndDeadNeighbors(int xCell, int yCell, int *aliveNeighbors, int *deadNeighbors)
+void draw_grid(void)
 {
-    // create a virtual 3x3 grid, I am the center
-    // *aliveNeighbors = 0;
-    // *deadNeighbors = 0;
-
-    for (int xCord = -1; xCord < 2; xCord++)
+    for (int x_pixel = 0; x_pixel < screen_width; x_pixel += cell_size)
     {
-        for (int yCord = -1; yCord < 2; yCord++)
+        for (int y_pixel = 0; y_pixel < screen_height; y_pixel += cell_size)
         {
-            // im at the center, continue
-            if (xCord == 0 && yCord == 0)
-                continue;
-
-            int xCordNeighbor = xCord + xCell;
-            int yCordNeighbor = yCord + yCell;
-
-            bool neighborXInBoundry = xCordNeighbor >= 0 && xCordNeighbor < gridWidth;
-            bool neighborYInBoundry = yCordNeighbor < gridHeight && yCordNeighbor >= 0;
-            if (neighborXInBoundry && neighborYInBoundry)
+            int x_cord = x_pixel / cell_size;
+            int y_cord = y_pixel / cell_size;
+            bool is_grid_alive = grid_state[x_cord][y_cord];
+            if (is_grid_alive)
             {
-                if (gridState[xCordNeighbor][yCordNeighbor])
-                {
-                    (*aliveNeighbors)++;
-                }
-                else
-                {
-                    (*deadNeighbors)++;
-                }
-            }
-        }
-    }
-}
-
-void UpdateGame(void)
-{
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-    {
-        Vector2 mousePosition = GetMousePosition();
-        int xCell = (int)(mousePosition.x / cellSize);
-        int yCell = (int)(mousePosition.y / cellSize);
-        gridState[xCell][yCell] = !gridState[xCell][yCell];
-    }
-    if (IsKeyPressed('P'))
-    {
-        pause = !pause;
-    }
-    if (!pause)
-    {
-        bool newGridState[gridWidth][gridHeight] = {false};
-        // cell logic
-        for (int x = 0; x < gridWidth; x++)
-        {
-            for (int y = 0; y < gridHeight; y++)
-            {
-                bool cellIsAlive = gridState[x][y];
-                int aliveNeighbors = 0;
-                int deadNeighbors = 0;
-                CellGetAliveAndDeadNeighbors(x, y, &aliveNeighbors, &deadNeighbors);
-                if (cellIsAlive)
-                {
-                    if (aliveNeighbors < 2 || aliveNeighbors > 3)
-                    {
-                        newGridState[x][y] = false;
-                    }
-                    else
-                    {
-                        newGridState[x][y] = true;
-                    }
-                }
-                else
-                {
-                    // neighbors == 3, live
-                    if (aliveNeighbors == 3)
-                        newGridState[x][y] = true;
-                }
-            }
-        }
-
-        // make gridState = newGridState;
-        for (int x = 0; x < gridWidth; x++)
-        {
-            for (int y = 0; y < gridHeight; y++)
-            {
-                gridState[x][y] = newGridState[x][y];
-            }
-        }
-    }
-}
-
-void DrawGrid(void)
-{
-    for (int x = 0; x < screenWidth; x += cellSize)
-    {
-        for (int y = 0; y < screenHeight; y += cellSize)
-        {
-            int xCell = x / cellSize;
-            int yCell = y / cellSize;
-
-            if (gridState[xCell][yCell])
-            {
-                DrawRectangle(x, y, cellSize, cellSize, BLACK);
+                DrawRectangle(x_pixel, y_pixel, cell_size, cell_size, BLACK);
             }
             else
             {
-
-                DrawRectangleLines(x, y, cellSize, cellSize, LIGHTGRAY);
+                DrawRectangleLines(x_pixel, y_pixel, cell_size, cell_size, LIGHTGRAY);
             }
         }
     }
 }
 
-void DrawGame(void)
+void draw_game(void)
 {
     BeginDrawing();
     ClearBackground(RAYWHITE);
-    DrawGrid();
-
+    draw_grid();
     if (pause)
     {
-        DrawText("[P] to Unpause, go edit cells", 10, 10, 30, GREEN);
+        DrawText("[P] to unpause, click cell to edit", 10, 10, 30, GREEN);
     }
     else
     {
-        DrawText("[P] to Pause", 10, 10, 30, GREEN);
+        DrawText("[P] to pause, pause to edit", 10, 10, 30, GREEN);
     }
-
-    DrawFPS(GetScreenWidth() - 95, 10);
+    DrawFPS(GetScreenWidth() - 90, 10);
     EndDrawing();
 }
 
-void UpdateDraw(void)
+void get_cell_neighbors(int x, int y, int *alive_neighbors, int *dead_neighbors)
 {
-    UpdateGame();
-    DrawGame();
+    // create a 3x3 grid where I am the center, (0,0)
+    for (int vir_x = -1; vir_x < 2; vir_x++)
+    {
+        for (int vir_y = -1; vir_y < 2; vir_y++)
+        {
+            if (vir_x == 0 && vir_y == 0)
+                continue;
+
+            int neighbor_x = vir_x + x;
+            int neighbor_y = vir_y + y;
+
+            bool is_x_in_boundry = neighbor_x >= 0 && neighbor_x < grid_width;
+            bool is_y_in_boundry = neighbor_y >= 0 && neighbor_y < grid_height;
+            if (!is_x_in_boundry || !is_y_in_boundry)
+                continue;
+
+            bool is_neighbor_alive = grid_state[neighbor_x][neighbor_y];
+            if (is_neighbor_alive)
+            {
+                (*alive_neighbors)++;
+            }
+            else
+            {
+                (*dead_neighbors)++;
+            }
+        }
+    }
+}
+
+void update_game(void)
+{
+
+    bool temp_grid_state[grid_width][grid_height] = {false};
+    if (IsKeyPressed('P'))
+    {
+        pause = !pause;
+        // virtualGrid to hold new state
+        // bool temp_grid_state[grid_width][grid_height] = {false};
+    }
+
+    if (pause)
+    {
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        {
+            Vector2 mouse_position = GetMousePosition();
+            int x_cord = (int)(mouse_position.x / cell_size);
+            int y_cord = (int)(mouse_position.y / cell_size);
+            grid_state[x_cord][y_cord] = !grid_state[x_cord][y_cord];
+        }
+    }
+    else
+    {
+
+        for (int x = 0; x < grid_width; x++)
+        {
+            for (int y = 0; y < grid_height; y++)
+            {
+                int alive_neighbors = 0;
+                int dead_neighbors = 0;
+                get_cell_neighbors(x, y, &alive_neighbors, &dead_neighbors);
+                bool is_cell_alive = grid_state[x][y];
+                if (is_cell_alive)
+                {
+                    if (alive_neighbors < 2 || alive_neighbors > 3)
+                    {
+                        temp_grid_state[x][y] = false;
+                    }
+                    else
+                    {
+                        temp_grid_state[x][y] = true;
+                    }
+                }
+                else
+                {
+                    if (alive_neighbors == 3)
+                        temp_grid_state[x][y] = true;
+                }
+            }
+        }
+
+        // set the grid_state to the temp grid state
+        for (int x = 0; x < grid_width; x++)
+        {
+            for (int y = 0; y < grid_height; y++)
+            {
+                grid_state[x][y] = temp_grid_state[x][y];
+            }
+        }
+    }
+}
+
+void update_draw(void)
+{
+    update_game();
+    draw_game();
 }
