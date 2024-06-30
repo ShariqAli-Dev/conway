@@ -16,7 +16,7 @@ static void UpdateGame(void);
 int main()
 {
     InitWindow(screenWidth, screenHeight, "Conway's Game of Life");
-    SetTargetFPS(5);
+    SetTargetFPS(10);
 
     while (!WindowShouldClose())
     {
