@@ -3,7 +3,7 @@
 
 static const unsigned int screenWidth = 800;
 static const unsigned int screenHeight = 600;
-static const unsigned int cellSize = 200;
+static const unsigned int cellSize = 50;
 static const unsigned int gridWidth = screenWidth / cellSize;
 static const unsigned int gridHeight = screenHeight / cellSize;
 static bool gridState[gridWidth][gridHeight] = {false};
@@ -17,7 +17,7 @@ static void UpdateGame(void);
 int main()
 {
     InitWindow(screenWidth, screenHeight, "Conway's Game of Life");
-    SetTargetFPS(30);
+    SetTargetFPS(10);
 
     while (!WindowShouldClose())
     {
@@ -28,12 +28,12 @@ int main()
     return 0;
 }
 
-int GetCellNeighborsAlive(int xCell, int yCell)
+void CellGetAliveAndDeadNeighbors(int xCell, int yCell, int *aliveNeighbors, int *deadNeighbors)
 {
-    printf("%d xCell, %d yCell\n");
-    int aliveNeighbors = 0;
-
     // create a virtual 3x3 grid, I am the center
+    *aliveNeighbors = 0;
+    *deadNeighbors = 0;
+
     for (int xCord = -1; xCord < 2; xCord++)
     {
         for (int yCord = -1; yCord < 2; yCord++)
@@ -50,12 +50,17 @@ int GetCellNeighborsAlive(int xCell, int yCell)
             if (neighborXInBoundry && neighborYInBoundry)
             {
                 if (gridState[xCordNeighbor][yCordNeighbor])
-                    aliveNeighbors++;
+                {
+                    (*aliveNeighbors)++;
+                }
+                else
+                {
+                    (*deadNeighbors)++;
+                }
             }
         }
     }
-    return aliveNeighbors;
-};
+}
 
 void UpdateGame(void)
 {
@@ -72,20 +77,43 @@ void UpdateGame(void)
     }
     if (!pause)
     {
+        bool newGridState[gridWidth][gridHeight] = {false};
         // cell logic
-        for (int x = 0; x < screenWidth; x += cellSize)
+        for (int x = 0; x < gridWidth; x += x++)
         {
-            for (int y = 0; y < screenHeight; y += cellSize)
+            for (int y = 0; y < gridHeight; y++)
             {
-                int xCell = x / cellSize;
-                int yCell = y / cellSize;
-
-                if (gridState[xCell][yCell])
+                bool cellIsAlive = gridState[x][y];
+                int aliveNeighbors = 0;
+                int deadNeighbors = 0;
+                CellGetAliveAndDeadNeighbors(x, y, &aliveNeighbors, &deadNeighbors);
+                printf("aliveN: %d, deadN, %d\n", aliveNeighbors, deadNeighbors);
+                if (cellIsAlive)
                 {
-                    int aliveNeighbors = GetCellNeighborsAlive(xCell, yCell);
-                    printf("alive neighbors %d\n", aliveNeighbors);
-                    gridState[xCell][yCell] = false;
+                    if (aliveNeighbors < 2 || aliveNeighbors > 3)
+                    {
+                        newGridState[x][y] = false;
+                    }
+                    else
+                    {
+                        newGridState[x][y] = true;
+                    }
                 }
+                else
+                {
+                    // neighbors == 3, live
+                    if (aliveNeighbors == 3)
+                        gridState[x][y] = true;
+                }
+            }
+        }
+
+        // make gridState = newGridState;
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                gridState[x][y] = newGridState[x][y];
             }
         }
     }
@@ -111,7 +139,7 @@ void DrawGrid(void)
             }
         }
     }
-};
+}
 
 void DrawGame(void)
 {
